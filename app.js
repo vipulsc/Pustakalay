@@ -2,6 +2,12 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 require("./db/sever");
+
+const user = require("./routes/user");
+app.use(express.json());
+//Routes
+app.use("/api/v1", user);
+
 //PORT
 const port = process.env.PORT;
 
