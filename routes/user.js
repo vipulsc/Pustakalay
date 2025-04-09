@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const User = require("../db/models/user");
+const authenticateToken = require("./userAuth");
 
 // Schema for signup input validation
 const signupSchema = z.object({
@@ -10,6 +11,7 @@ const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(5, "Password must be at least 5 characters"),
   address: z.string().min(3, "Address must be at least 3 characters"),
+  role: z.enum(["user", "admin"]).optional(),
 });
 
 // Schema for signin input validation
@@ -26,7 +28,7 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
-    const { username, email, password, address } = parsed.data;
+    const { username, email, password, address, role = "user" } = parsed.data;
 
     const usernameExists = await User.findOne({ username });
     if (usernameExists) {
@@ -45,6 +47,7 @@ router.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       address,
+      role,
     });
 
     await user.save();
@@ -96,6 +99,47 @@ router.post("/signin", async (req, res) => {
   } catch (err) {
     console.error("Signin Error -->", err);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//userInfo
+router.get("/userInfo", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).select("-password"); //password will not come now
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("userInfo error →", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+const addressSchema = z.object({
+  address: z.string().min(3, "Address must be at least 3 characters"),
+});
+
+router.put("/update_address", authenticateToken, async (req, res) => {
+  try {
+    const parsed = addressSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      req.user.id,
+      { address: parsed.data.address },
+      { new: true }
+    ).select("-password");
+
+    return res.status(200).json({ message: "Address updated", user: updated });
+  } catch (err) {
+    console.error("update_address error →", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

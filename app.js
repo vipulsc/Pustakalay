@@ -4,9 +4,11 @@ require("dotenv").config();
 require("./db/sever");
 
 const user = require("./routes/user");
+const book = require("./routes/book");
 app.use(express.json());
 //Routes
 app.use("/api/v1", user);
+app.use("/api/v1", book);
 
 //PORT
 const port = process.env.PORT;

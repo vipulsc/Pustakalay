@@ -31,4 +31,4 @@ const book = new mongoose.Schema(
     timestamps: true,
   }
 );
-model.exports = mongoose.model("book", order);
+module.exports = mongoose.model("book", book);
