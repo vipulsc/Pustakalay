@@ -18,6 +18,13 @@
 
 > [https://pustakalay-bskt.onrender.com/api/v1](https://pustakalay-bskt.onrender.com/api/v1)
 
+
+## For Running Locally
+```
+npm install
+setup .env (refer .env.example)
+node index.js
+```
 ---
 
 ### 🔐 Authentication & User Routes
