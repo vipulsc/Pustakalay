@@ -5,8 +5,8 @@ require("./db/sever");
 
 const user = require("./routes/user");
 const book = require("./routes/book");
-const cart=require("./routes/cart");
-const favourite=require("./routes/favourite");
+const cart = require("./routes/cart");
+const favourite = require("./routes/favourite");
 app.use(express.json());
 
 //Routes
@@ -27,3 +27,5 @@ app.listen(port, () => {
 app.get("/", (req, res) => {
   res.send("Backend is Running");
 });
+
+module.exports = app;

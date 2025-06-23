@@ -18,13 +18,14 @@
 
 > [https://pustakalay-bskt.onrender.com/api/v1](https://pustakalay-bskt.onrender.com/api/v1)
 
-
 ## For Running Locally
+
 ```
 npm install
 setup .env (refer .env.example)
 node index.js
 ```
+
 ---
 
 ### 🔐 Authentication & User Routes
@@ -112,7 +113,9 @@ node index.js
     }
 
 ```
+
 ---
+
 ---
 
 ### Admin Signup
@@ -167,8 +170,26 @@ node index.js
 
 ![Remove from Favourite](screenshots/removeFromFavourites-USER.png)
 
-
-
 ---
 
 > ⚠️ **Note:** While signing up, users do **not need to provide the `role` field**. By default, the role is set to `"user"` internally. Only admins are added manually or through separate logic.
+
+---
+
+## 🧪 Testing
+
+This project uses **Jest** and **Supertest** for unit, integration, and API testing.
+
+### How to Run Tests
+
+```
+npm install
+npm test
+```
+
+- **Jest** is used as the test runner and for assertions.
+- **Supertest** is used for HTTP assertions on API endpoints.
+
+Test coverage reports will be generated in the `coverage/` directory after running tests.
+
+---
