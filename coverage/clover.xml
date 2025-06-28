@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1751092239938" clover="3.2.0">
-  <project timestamp="1751092239938" name="All files">
+<coverage generated="1751092410854" clover="3.2.0">
+  <project timestamp="1751092410854" name="All files">
     <metrics statements="208" coveredstatements="69" conditionals="49" coveredconditionals="2" methods="18" coveredmethods="0" elements="275" coveredelements="71" complexity="0" loc="208" ncloc="208" packages="4" files="9" classes="9"/>
     <package name="Kitaabi Kidaa">
       <metrics statements="20" coveredstatements="15" conditionals="6" coveredconditionals="2" methods="2" coveredmethods="0"/>
