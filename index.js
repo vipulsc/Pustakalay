@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/v1", require("./routes/userAuth"));
 app.use("/api/v1", require("./routes/user"));
 app.use("/api/v1", require("./routes/book"));
 app.use("/api/v1", require("./routes/cart"));
