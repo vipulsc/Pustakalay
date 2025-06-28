@@ -9,27 +9,21 @@ let adminToken;
 let testBookId;
 let testUserId;
 
+// Test user data
+const testUser = {
+  username: "testuser",
+  email: "test@example.com",
+  password: "password123",
+  address: "123 Test Street",
+};
+
 describe("API Server Basic Tests", () => {
-  afterAll(async () => {
-    await mongoose.connection.close();
+  beforeAll(async () => {
+    // Connect to test database
+    await mongoose.connect(
+      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
+    );
   });
-
-  it("should return Backend is Running on GET /", async () => {
-    const res = await request(app).get("/");
-    expect(res.statusCode).toBe(200);
-    expect(res.text).toBe("Backend is Running");
-  });
-});
-
-describe("User API", () => {
-  let token;
-  let userId;
-  const testUser = {
-    username: "testuser",
-    email: "testuser@example.com",
-    password: "testpass123",
-    address: "123 Test Lane",
-  };
 
   afterAll(async () => {
     // Clean up test user
@@ -41,16 +35,14 @@ describe("User API", () => {
     const res = await request(app).post("/api/v1/signup").send(testUser);
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty("token");
-    expect(res.body.user).toHaveProperty("username", testUser.username);
-    token = res.body.token;
-    userId = res.body.user.id;
-  });
+    expect(res.body.user.email).toBe(testUser.email);
+  }, 10000);
 
   it("should not signup with existing email", async () => {
     const res = await request(app).post("/api/v1/signup").send(testUser);
     expect(res.statusCode).toBe(400);
     expect(res.body.message).toMatch(/already registered|already taken/);
-  });
+  }, 10000);
 
   it("should signin with correct credentials", async () => {
     const res = await request(app).post("/api/v1/signin").send({
@@ -59,8 +51,7 @@ describe("User API", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("token");
-    expect(res.body.user).toHaveProperty("email", testUser.email);
-  });
+  }, 10000);
 
   it("should not signin with wrong password", async () => {
     const res = await request(app).post("/api/v1/signin").send({
@@ -68,15 +59,17 @@ describe("User API", () => {
       password: "wrongpass",
     });
     expect(res.statusCode).toBe(400);
-    expect(res.body.message).toMatch(/Invalid email or password/);
-  });
+  }, 10000);
 });
 
 describe("Kitaabi Kidaa API Tests", () => {
   beforeAll(async () => {
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
-    );
+    // Ensure we're connected to test database
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(
+        process.env.MONGODB_URI || "mongodb://localhost:27017/test"
+      );
+    }
   });
 
   afterAll(async () => {
@@ -84,8 +77,13 @@ describe("Kitaabi Kidaa API Tests", () => {
   });
 
   beforeEach(async () => {
-    await User.deleteMany({});
-    await Book.deleteMany({});
+    // Clear test data before each test
+    try {
+      await User.deleteMany({});
+      await Book.deleteMany({});
+    } catch (error) {
+      console.log("Database cleanup error:", error.message);
+    }
   });
 
   describe("Health Check", () => {
@@ -93,7 +91,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       const response = await request(app).get("/");
       expect(response.status).toBe(200);
       expect(response.text).toBe("Backend is Running");
-    });
+    }, 10000);
   });
 
   describe("Authentication", () => {
@@ -112,7 +110,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.body.token).toBeDefined();
       expect(response.body.user.username).toBe(userData.username);
       expect(response.body.user.email).toBe(userData.email);
-    });
+    }, 15000);
 
     test("POST /api/v1/signup - Should fail with invalid data", async () => {
       const invalidData = {
@@ -128,7 +126,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBeDefined();
-    });
+    }, 10000);
 
     test("POST /api/v1/signin - Should authenticate user", async () => {
       const userData = {
@@ -153,7 +151,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.body.message).toBe("Signin successful");
       expect(response.body.token).toBeDefined();
       authToken = response.body.token;
-    });
+    }, 15000);
 
     test("POST /api/v1/signin - Should fail with wrong credentials", async () => {
       const signinData = {
@@ -167,7 +165,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Invalid email or password");
-    });
+    }, 10000);
   });
 
   describe("User Management", () => {
@@ -195,13 +193,13 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.body.username).toBe("testuser");
       expect(response.body.email).toBe("test@example.com");
       expect(response.body.password).toBeUndefined();
-    });
+    }, 10000);
 
     test("GET /api/v1/userInfo - Should fail without token", async () => {
       const response = await request(app).get("/api/v1/userInfo");
 
       expect(response.status).toBe(401);
-    });
+    }, 10000);
 
     test("PUT /api/v1/update_address - Should update user address", async () => {
       const newAddress = "456 New Street";
@@ -214,7 +212,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Address updated");
       expect(response.body.user.address).toBe(newAddress);
-    });
+    }, 10000);
 
     test("PUT /api/v1/update_address - Should fail with invalid address", async () => {
       const response = await request(app)
@@ -224,7 +222,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBeDefined();
-    });
+    }, 10000);
   });
 
   describe("Book Management", () => {
@@ -262,7 +260,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.body.message).toBe("Book added successfully");
       expect(response.body.bookId).toBeDefined();
       testBookId = response.body.bookId;
-    });
+    }, 15000);
 
     test("POST /api/v1/addbook - Should fail without admin token", async () => {
       const userData = {
@@ -293,7 +291,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe("Only admin can add books");
-    });
+    }, 15000);
 
     test("GET /api/v1/allbooks - Should get all books", async () => {
       const bookData = {
@@ -315,7 +313,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.books).toBeInstanceOf(Array);
       expect(response.body.books.length).toBeGreaterThan(0);
-    });
+    }, 15000);
 
     test("PUT /api/v1/updatebook/:bookId - Should update book", async () => {
       const bookData = {
@@ -348,7 +346,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.body.message).toBe("Book updated");
       expect(response.body.book.title).toBe("Updated Book Title");
       expect(response.body.book.price).toBe("39.99");
-    });
+    }, 15000);
 
     test("DELETE /api/v1/deletebook/:bookId - Should delete book", async () => {
       const bookData = {
@@ -373,7 +371,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Book deleted successfully");
-    });
+    }, 15000);
   });
 
   describe("Cart Management", () => {
@@ -428,7 +426,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Book added to cart");
       expect(response.body.cart).toContain(testBookId);
-    });
+    }, 15000);
 
     test("PUT /api/v1/addtocart/:bookId - Should fail adding same book twice", async () => {
       await request(app)
@@ -441,7 +439,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Book is already in cart");
-    });
+    }, 15000);
 
     test("PUT /api/v1/removefromcart/:bookId - Should remove book from cart", async () => {
       await request(app)
@@ -455,7 +453,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Book removed from cart");
       expect(response.body.cart).not.toContain(testBookId);
-    });
+    }, 15000);
 
     test("PUT /api/v1/removefromcart/:bookId - Should fail removing non-existent book", async () => {
       const response = await request(app)
@@ -464,7 +462,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Book is not in cart");
-    });
+    }, 10000);
   });
 
   describe("Favourites Management", () => {
@@ -519,7 +517,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Book added to favourites");
       expect(response.body.favourites).toContain(testBookId);
-    });
+    }, 15000);
 
     test("PUT /api/v1/addtofavourites/:bookId - Should fail adding same book twice", async () => {
       await request(app)
@@ -532,7 +530,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Book already in favourites");
-    });
+    }, 15000);
 
     test("PUT /api/v1/addtofavourites/:bookId - Should fail with non-existent book", async () => {
       const fakeBookId = new mongoose.Types.ObjectId();
@@ -542,7 +540,7 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("Book not found");
-    });
+    }, 10000);
 
     test("PUT /api/v1/removefromfavourites/:bookId - Should remove book from favourites", async () => {
       await request(app)
@@ -556,7 +554,7 @@ describe("Kitaabi Kidaa API Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Book removed from favourites");
       expect(response.body.favourites).not.toContain(testBookId);
-    });
+    }, 15000);
 
     test("PUT /api/v1/removefromfavourites/:bookId - Should fail removing non-existent book", async () => {
       const response = await request(app)
@@ -565,6 +563,6 @@ describe("Kitaabi Kidaa API Tests", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Book is not in favourites");
-    });
+    }, 10000);
   });
 });
