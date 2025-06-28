@@ -1,0 +1,800 @@
+openapi: 3.0.3
+info:
+  title: Kitaabi Kidaa API
+  description: A book store API with user authentication, book management, cart, and favorites functionality
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@kitaabikidaa.com
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.kitaabikidaa.com
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: User ID
+        username:
+          type: string
+          description: Username
+        email:
+          type: string
+          format: email
+          description: User email
+        address:
+          type: string
+          description: User address
+        role:
+          type: string
+          enum: [user, admin]
+          description: User role
+        cart:
+          type: array
+          items:
+            type: string
+          description: Array of book IDs in cart
+        favourites:
+          type: array
+          items:
+            type: string
+          description: Array of book IDs in favourites
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Book:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Book ID
+        url:
+          type: string
+          format: uri
+          description: Book cover image URL
+        title:
+          type: string
+          description: Book title
+        author:
+          type: string
+          description: Book author
+        price:
+          type: string
+          description: Book price
+        desc:
+          type: string
+          description: Book description
+        language:
+          type: string
+          description: Book language
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SignupRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - address
+      properties:
+        username:
+          type: string
+          minLength: 4
+          description: Username (minimum 4 characters)
+        email:
+          type: string
+          format: email
+          description: User email
+        password:
+          type: string
+          minLength: 5
+          description: Password (minimum 5 characters)
+        address:
+          type: string
+          minLength: 3
+          description: User address (minimum 3 characters)
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+          description: User role
+
+    SigninRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+        password:
+          type: string
+          minLength: 5
+          description: User password
+
+    BookRequest:
+      type: object
+      required:
+        - url
+        - title
+        - author
+        - price
+        - desc
+        - language
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Book cover image URL
+        title:
+          type: string
+          description: Book title
+        author:
+          type: string
+          description: Book author
+        price:
+          type: string
+          description: Book price
+        desc:
+          type: string
+          minLength: 5
+          description: Book description (minimum 5 characters)
+        language:
+          type: string
+          description: Book language
+
+    AddressUpdateRequest:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          type: string
+          minLength: 3
+          description: New address (minimum 3 characters)
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+
+    Success:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+
+paths:
+  /:
+    get:
+      summary: Health check
+      description: Check if the API is running
+      responses:
+        "200":
+          description: API is running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Backend is Running"
+
+  /api/v1/signup:
+    post:
+      summary: User signup
+      description: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signup successful"
+                  token:
+                    type: string
+                    description: JWT token
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      username:
+                        type: string
+                      email:
+                        type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/signin:
+    post:
+      summary: User signin
+      description: Authenticate user and get JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigninRequest"
+      responses:
+        "200":
+          description: User authenticated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signin successful"
+                  token:
+                    type: string
+                    description: JWT token
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      username:
+                        type: string
+                      email:
+                        type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/userInfo:
+    get:
+      summary: Get user information
+      description: Get current user's information
+      tags:
+        - User
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/update_address:
+    put:
+      summary: Update user address
+      description: Update current user's address
+      tags:
+        - User
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressUpdateRequest"
+      responses:
+        "200":
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Address updated"
+                  user:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/addbook:
+    post:
+      summary: Add a new book
+      description: Add a new book (admin only)
+      tags:
+        - Books
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+      responses:
+        "201":
+          description: Book added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added successfully"
+                  bookId:
+                    type: string
+                    description: ID of the created book
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/updatebook/{bookId}:
+    put:
+      summary: Update a book
+      description: Update an existing book (admin only)
+      tags:
+        - Books
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                title:
+                  type: string
+                author:
+                  type: string
+                price:
+                  type: string
+                desc:
+                  type: string
+                language:
+                  type: string
+      responses:
+        "200":
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book updated"
+                  book:
+                    $ref: "#/components/schemas/Book"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/deletebook/{bookId}:
+    delete:
+      summary: Delete a book
+      description: Delete a book (admin only)
+      tags:
+        - Books
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to delete
+      responses:
+        "200":
+          description: Book deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book deleted successfully"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/allbooks:
+    get:
+      summary: Get all books
+      description: Retrieve all books (public endpoint)
+      tags:
+        - Books
+      responses:
+        "200":
+          description: Books retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  books:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Book"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/addtocart/{bookId}:
+    put:
+      summary: Add book to cart
+      description: Add a book to user's cart
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to add to cart
+      responses:
+        "200":
+          description: Book added to cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to cart"
+                  cart:
+                    type: array
+                    items:
+                      type: string
+                    description: Updated cart array
+        "400":
+          description: Bad request - Book already in cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/removefromcart/{bookId}:
+    put:
+      summary: Remove book from cart
+      description: Remove a book from user's cart
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to remove from cart
+      responses:
+        "200":
+          description: Book removed from cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from cart"
+                  cart:
+                    type: array
+                    items:
+                      type: string
+                    description: Updated cart array
+        "400":
+          description: Bad request - Book not in cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/addtofavourites/{bookId}:
+    put:
+      summary: Add book to favourites
+      description: Add a book to user's favourites
+      tags:
+        - Favourites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to add to favourites
+      responses:
+        "200":
+          description: Book added to favourites successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to favourites"
+                  favourites:
+                    type: array
+                    items:
+                      type: string
+                    description: Updated favourites array
+        "400":
+          description: Bad request - Book already in favourites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/removefromfavourites/{bookId}:
+    put:
+      summary: Remove book from favourites
+      description: Remove a book from user's favourites
+      tags:
+        - Favourites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the book to remove from favourites
+      responses:
+        "200":
+          description: Book removed from favourites successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from favourites"
+                  favourites:
+                    type: array
+                    items:
+                      type: string
+                    description: Updated favourites array
+        "400":
+          description: Bad request - Book not in favourites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: User
+    description: User management operations
+  - name: Books
+    description: Book management operations
+  - name: Cart
+    description: Shopping cart operations
+  - name: Favourites
+    description: Favourites management operations

@@ -1,0 +1,61 @@
+keploy:
+  app:
+    name: "kitaabi-kidaa-api"
+    port: 3000
+    command: "npm start"
+    network:
+      name: "keploy-network"
+      driver: "bridge"
+
+  test:
+    path: "./keploy-tests"
+    timeout: 30
+    delay: 5
+    filters:
+      url:
+        - "/api/v1/*"
+      method:
+        - "GET"
+        - "POST"
+        - "PUT"
+        - "DELETE"
+
+  record:
+    path: "./keploy-tests"
+    filters:
+      url:
+        - "/api/v1/*"
+      method:
+        - "GET"
+        - "POST"
+        - "PUT"
+        - "DELETE"
+
+  mock:
+    path: "./keploy-mocks"
+
+  database:
+    type: "mongodb"
+    uri: "mongodb://localhost:27017/test"
+
+  http:
+    timeout: 30
+    retries: 3
+
+  noise:
+    global:
+      - "timestamp"
+      - "createdAt"
+      - "updatedAt"
+      - "_id"
+    headers:
+      - "date"
+      - "server"
+      - "connection"
+    body:
+      - "token"
+      - "password"
+
+  ignore:
+    - "/health"
+    - "/metrics"

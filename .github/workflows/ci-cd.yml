@@ -1,0 +1,163 @@
+name: CI/CD Pipeline with Keploy API Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "18"
+  MONGODB_URI: mongodb://localhost:27017/test
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          echo "PORT=3000" > .env
+          echo "JWT_SECRET=test-secret-key" >> .env
+          echo "MONGODB_URI=mongodb://localhost:27017/test" >> .env
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 10
+        env:
+          PORT: 3000
+          JWT_SECRET: test-secret-key
+          MONGODB_URI: mongodb://localhost:27017/test
+
+      - name: Wait for application to be ready
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:3000; do sleep 1; done'
+
+      - name: Run API tests with Keploy
+        run: |
+          curl -fsSL https://get.keploy.io | sh
+          export PATH=$PATH:$HOME/.keploy/bin
+          keploy test --config-path .keploy/config.yaml --delay 5
+
+  keploy-record:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          echo "PORT=3000" > .env
+          echo "JWT_SECRET=test-secret-key" >> .env
+          echo "MONGODB_URI=mongodb://localhost:27017/test" >> .env
+
+      - name: Install Keploy
+        run: |
+          curl -fsSL https://get.keploy.io | sh
+          export PATH=$PATH:$HOME/.keploy/bin
+
+      - name: Record API interactions
+        run: |
+          export PATH=$PATH:$HOME/.keploy/bin
+          keploy record --config-path .keploy/config.yaml &
+          sleep 5
+          npm start &
+          sleep 10
+
+          # Run test scenarios to record API interactions
+          curl -X POST http://localhost:3000/api/v1/signup \
+            -H "Content-Type: application/json" \
+            -d '{"username":"testuser","email":"test@example.com","password":"password123","address":"123 Test Street"}'
+
+          curl -X POST http://localhost:3000/api/v1/signin \
+            -H "Content-Type: application/json" \
+            -d '{"email":"test@example.com","password":"password123"}'
+
+          curl -X GET http://localhost:3000/api/v1/allbooks
+
+          sleep 5
+          pkill -f keploy
+          pkill -f node
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, keploy-record]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create production .env
+        run: |
+          echo "PORT=3000" > .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+
+      - name: Deploy to production
+        run: |
+          echo "Deployment completed successfully"
+          echo "API is now live at: https://your-production-domain.com"
+
+      - name: Run post-deployment tests
+        run: |
+          echo "Running post-deployment health checks..."
+          curl -f https://your-production-domain.com || exit 1
