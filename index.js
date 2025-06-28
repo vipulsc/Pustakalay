@@ -21,7 +21,9 @@ app.get("/", (req, res) => {
 });
 
 // Connect to database
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== "test") {
