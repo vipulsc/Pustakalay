@@ -1,31 +1,34 @@
 const express = require("express");
-const app = express();
-require("dotenv").config();
-require("./db/sever");
+const cors = require("cors");
+const connectDB = require("./db/sever");
 
-const user = require("./routes/user");
-const book = require("./routes/book");
-const cart = require("./routes/cart");
-const favourite = require("./routes/favourite");
+const app = express();
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-//Routes
-app.use("/api/v1", user);
-app.use("/api/v1", book);
-app.use("/api/v1", cart);
-app.use("/api/v1", favourite);
+// Routes
+app.use("/api/v1", require("./routes/userAuth"));
+app.use("/api/v1", require("./routes/user"));
+app.use("/api/v1", require("./routes/book"));
+app.use("/api/v1", require("./routes/cart"));
+app.use("/api/v1", require("./routes/favourite"));
 
-//PORT
-const port = process.env.PORT;
-
-//Running on Local Host
-app.listen(port, () => {
-  console.log(`Server is Running on Port ${port}`);
-});
-
-//Default
+// Health check
 app.get("/", (req, res) => {
   res.send("Backend is Running");
 });
+
+// Connect to database
+connectDB();
+
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== "test") {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Server is Running on Port ${port}`);
+  });
+}
 
 module.exports = app;

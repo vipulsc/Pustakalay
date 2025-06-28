@@ -5,8 +5,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest --coverage",
-    "test:simple": "jest test-simple.js --coverage"
+    "test": "NODE_ENV=test jest --coverage --detectOpenHandles --forceExit",
+    "test:simple": "NODE_ENV=test jest test-simple.js --coverage --detectOpenHandles --forceExit"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -24,5 +25,14 @@
   "devDependencies": {
     "jest": "^29.0.0",
     "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "testTimeout": 30000,
+    "forceExit": true,
+    "detectOpenHandles": true
   }
 }

@@ -3,7 +3,7 @@ const path = require("path");
 
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
-const server = async () => {
+const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URL);
     console.log("Database connected");
@@ -12,4 +12,4 @@ const server = async () => {
   }
 };
 
-server();
+module.exports = connectDB;

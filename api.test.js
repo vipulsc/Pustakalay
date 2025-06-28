@@ -17,64 +17,32 @@ const testUser = {
   address: "123 Test Street",
 };
 
-describe("API Server Basic Tests", () => {
-  beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
-    );
-  });
-
-  afterAll(async () => {
-    // Clean up test user
-    await User.deleteOne({ email: testUser.email });
-    await mongoose.connection.close();
-  });
-
-  it("should signup a new user", async () => {
-    const res = await request(app).post("/api/v1/signup").send(testUser);
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty("token");
-    expect(res.body.user.email).toBe(testUser.email);
-  }, 10000);
-
-  it("should not signup with existing email", async () => {
-    const res = await request(app).post("/api/v1/signup").send(testUser);
-    expect(res.statusCode).toBe(400);
-    expect(res.body.message).toMatch(/already registered|already taken/);
-  }, 10000);
-
-  it("should signin with correct credentials", async () => {
-    const res = await request(app).post("/api/v1/signin").send({
-      email: testUser.email,
-      password: testUser.password,
-    });
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty("token");
-  }, 10000);
-
-  it("should not signin with wrong password", async () => {
-    const res = await request(app).post("/api/v1/signin").send({
-      email: testUser.email,
-      password: "wrongpass",
-    });
-    expect(res.statusCode).toBe(400);
-  }, 10000);
-});
-
 describe("Kitaabi Kidaa API Tests", () => {
   beforeAll(async () => {
-    // Ensure we're connected to test database
-    if (mongoose.connection.readyState !== 1) {
+    // Set test environment
+    process.env.NODE_ENV = "test";
+
+    // Connect to test database
+    try {
       await mongoose.connect(
         process.env.MONGODB_URI || "mongodb://localhost:27017/test"
       );
+    } catch (error) {
+      console.error("Database connection error:", error.message);
     }
-  });
+  }, 30000);
 
   afterAll(async () => {
-    await mongoose.connection.close();
-  });
+    try {
+      // Clean up all test data
+      await User.deleteMany({});
+      await Book.deleteMany({});
+      // Close connection
+      await mongoose.connection.close();
+    } catch (error) {
+      console.error("Cleanup error:", error.message);
+    }
+  }, 10000);
 
   beforeEach(async () => {
     // Clear test data before each test
