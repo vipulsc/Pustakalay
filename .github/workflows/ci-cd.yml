@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_VERSION: "18"
-  MONGODB_URI: mongodb://localhost:27017/test
+  MONGO_URL: mongodb://localhost:27017/test
 
 jobs:
   test:
@@ -42,12 +42,12 @@ jobs:
         run: |
           echo "PORT=3000" > .env
           echo "JWT_SECRET=test-secret-key" >> .env
-          echo "MONGODB_URI=mongodb://localhost:27017/test" >> .env
+          echo "MONGO_URL=mongodb://localhost:27017/test" >> .env
 
       - name: Run unit tests
         run: npm test
         env:
-          MONGODB_URI: mongodb://localhost:27017/test
+          MONGO_URL: mongodb://localhost:27017/test
           JWT_SECRET: test-secret-key
 
       - name: Start application
@@ -57,7 +57,7 @@ jobs:
         env:
           PORT: 3000
           JWT_SECRET: test-secret-key
-          MONGODB_URI: mongodb://localhost:27017/test
+          MONGO_URL: mongodb://localhost:27017/test
 
       - name: Wait for application to be ready
         run: |
@@ -113,7 +113,7 @@ jobs:
         run: |
           echo "PORT=3000" > .env
           echo "JWT_SECRET=test-secret-key" >> .env
-          echo "MONGODB_URI=mongodb://localhost:27017/test" >> .env
+          echo "MONGO_URL=mongodb://localhost:27017/test" >> .env
 
       - name: Install Keploy (with SSL bypass)
         run: |
@@ -178,7 +178,7 @@ jobs:
         run: |
           echo "PORT=3000" > .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET || 'default-secret' }}" >> .env
-          echo "MONGODB_URI=${{ secrets.MONGODB_URI || 'mongodb://localhost:27017/prod' }}" >> .env
+          echo "MONGO_URL=${{ secrets.MONGO_URL || 'mongodb://localhost:27017/prod' }}" >> .env
 
       - name: Deploy to production
         run: |

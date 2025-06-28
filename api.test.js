@@ -4,6 +4,11 @@ const app = require("./index");
 const User = require("./db/models/user");
 const Book = require("./db/models/books");
 
+// Set test environment variables
+process.env.NODE_ENV = "test";
+process.env.MONGO_URL = "mongodb://localhost:27017/test";
+process.env.JWT_SECRET = "test-secret-key-for-jwt-signing";
+
 let authToken;
 let adminToken;
 let testBookId;
@@ -19,13 +24,10 @@ const testUser = {
 
 describe("Kitaabi Kidaa API Tests", () => {
   beforeAll(async () => {
-    // Set test environment
-    process.env.NODE_ENV = "test";
-
     // Connect to test database
     try {
       await mongoose.connect(
-        process.env.MONGODB_URI || "mongodb://localhost:27017/test"
+        process.env.MONGO_URL || "mongodb://localhost:27017/test"
       );
     } catch (error) {
       console.error("Database connection error:", error.message);
@@ -72,6 +74,9 @@ describe("Kitaabi Kidaa API Tests", () => {
       };
 
       const response = await request(app).post("/api/v1/signup").send(userData);
+
+      // Log response for debugging
+      console.log("Signup response:", response.body);
 
       expect(response.status).toBe(201);
       expect(response.body.message).toBe("Signup successful");
@@ -148,8 +153,18 @@ describe("Kitaabi Kidaa API Tests", () => {
       const signupResponse = await request(app)
         .post("/api/v1/signup")
         .send(userData);
+
+      // Safely access user ID
       authToken = signupResponse.body.token;
-      testUserId = signupResponse.body.user.id;
+      testUserId =
+        signupResponse.body.user?._id || signupResponse.body.user?.id;
+
+      if (!testUserId) {
+        console.error(
+          "No user ID found in signup response:",
+          signupResponse.body
+        );
+      }
     });
 
     test("GET /api/v1/userInfo - Should get user info with valid token", async () => {
